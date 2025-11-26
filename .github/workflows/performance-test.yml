@@ -1,0 +1,106 @@
+name: Performance Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Tipo de teste a executar'
+        required: true
+        type: choice
+        options:
+          - load
+          - spike
+        default: 'load'
+
+jobs:
+  performance-test:
+    name: Flight Booking Performance Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Run performance test
+        id: run_test
+        continue-on-error: true
+        run: |
+          mkdir -p results
+          
+          # Selecionar o script de teste baseado no tipo escolhido
+          TEST_TYPE="${{ github.event.inputs.test_type }}"
+          TEST_SCRIPT=""
+          
+          case "$TEST_TYPE" in
+            "load")
+              TEST_SCRIPT="tests/flight-booking-load-test.js"
+              echo "Running Load Test"
+              ;;
+            "spike")
+              TEST_SCRIPT="tests/flight-booking-spike-test.js"
+              echo "Running Spike Test"
+              ;;
+            *)
+              echo "Invalid test type: $TEST_TYPE"
+              exit 1
+              ;;
+          esac
+          
+          k6 run \
+            --out json=results/k6-results.json \
+            --out csv=results/k6-results.csv \
+            $TEST_SCRIPT
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
+          echo "test_type=$TEST_TYPE" >> $GITHUB_OUTPUT
+          echo "test_script=$TEST_SCRIPT" >> $GITHUB_OUTPUT
+
+      - name: Generate HTML report
+        if: always()
+        run: |
+          if [ -f results/k6-results.json ]; then
+            npm install -g k6-to-junit || true
+            # Instalar dependências para gerar relatório HTML se necessário
+            # Alternativamente, podemos usar uma action ou script customizado
+            echo "HTML report generation can be added here"
+          fi
+
+      - name: Parse results and generate summary
+        if: always()
+        id: parse_results
+        run: |
+          chmod +x scripts/generate-summary.js
+          if [ -f results/k6-results.json ]; then
+            node scripts/generate-summary.js results/k6-results.json >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "No results file found. Test may have failed before completion." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload test results as artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-performance-results
+          path: |
+            results/
+          retention-days: 30
+
+      - name: Check test thresholds
+        if: always()
+        run: |
+          EXIT_CODE="${{ steps.run_test.outputs.exit_code }}"
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "❌ Performance test failed - thresholds not met (exit code: $EXIT_CODE)"
+            exit 1
+          else
+            echo "✅ All performance thresholds passed"
+          fi
+
