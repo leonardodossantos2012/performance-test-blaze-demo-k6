@@ -295,3 +295,28 @@ Certifique-se de que o k6 está instalado e no PATH do sistema.
 - Verifique se os padrões de extração de dados do voo estão corretos
 - Ajuste os checks de validação se necessário
 
+## Análise dos Resultados
+
+Após executar os testes de performance, análises detalhadas dos resultados estão disponíveis:
+
+### 📊 [Análise do Teste de Carga](./docs/results-load-test.MD)
+
+Análise completa dos resultados do teste de carga, incluindo:
+- Métricas principais de performance
+- Análise detalhada de falhas e checks
+- Breakdown de tempos de resposta
+- Identificação de gargalos e problemas críticos
+- Recomendações de melhorias
+
+### 📈 [Análise do Teste de Spike](./docs/results-spike-test.MD)
+
+Análise completa dos resultados do teste de spike, incluindo:
+- Comportamento do sistema durante picos súbitos de carga
+- Comparação com o teste de carga
+- Análise de degradação de performance
+- Estratégias de mitigação para picos de tráfego
+- Recomendações específicas para auto-scaling
+
+Essas análises fornecem insights detalhados sobre o comportamento do sistema sob diferentes condições de carga e ajudam a identificar áreas que necessitam de otimização.
+
+
