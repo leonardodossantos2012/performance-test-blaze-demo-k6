@@ -3,6 +3,7 @@ import { check, sleep } from 'k6';
 import { purchaseSuccessRate } from '../services/metrics.js';
 import { generatePassengerData, getRandomCities } from '../services/data-generator.js';
 import { extractFlightInfo, buildReserveUrl } from '../services/flight-service.js';
+import { handleSummary } from '../services/reporter.js';
 
 export const options = {
   scenarios: {
@@ -101,4 +102,6 @@ export default function () {
 
   sleep(0.5);
 }
+
+export { handleSummary };
 

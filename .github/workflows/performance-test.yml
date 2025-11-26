@@ -32,9 +32,6 @@ jobs:
       - name: Run performance test
         id: run_test
         continue-on-error: true
-        env:
-          K6_WEB_DASHBOARD: true
-          K6_WEB_DASHBOARD_EXPORT: results/html-report.html
         run: |
           mkdir -p results
           
@@ -65,14 +62,24 @@ jobs:
           echo "test_type=$TEST_TYPE" >> $GITHUB_OUTPUT
           echo "test_script=$TEST_SCRIPT" >> $GITHUB_OUTPUT
 
+      - name: Move HTML report to results directory
+        if: always()
+        run: |
+          if [ -f report.html ]; then
+            mv report.html results/report.html
+            echo "✅ HTML report moved to results/report.html"
+            ls -lh results/report.html
+          else
+            echo "⚠️ HTML report not found, but continuing..."
+          fi
+
       - name: Verify HTML report generation
         if: always()
         run: |
-          if [ -f results/html-report.html ]; then
-            echo "✅ HTML report generated successfully"
-            ls -lh results/html-report.html
+          if [ -f results/report.html ]; then
+            echo "✅ HTML report verified in results directory"
           else
-            echo "⚠️ HTML report not found, but continuing..."
+            echo "⚠️ HTML report not found in results directory"
           fi
 
       - name: Upload test results as artifacts
